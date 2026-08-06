@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlowBuild CRM
 
-## Getting Started
+Internal project tracker for FlowBuild's side-job websites — pipeline board, project details, quick links, and to-dos. Not related to the main GoHighLevel CRM.
 
-First, run the development server:
+## 1. Create a free Supabase project
+
+1. Go to [supabase.com](https://supabase.com) and create a free account + new project.
+2. In the Supabase dashboard, open the **SQL Editor**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the `projects` and `project_tasks` tables.
+3. Go to **Project Settings → API** and copy the **Project URL** and **anon public key**.
+4. Go to **Authentication → Users** and click **Add user** to create a login for yourself (and anyone else on the team) — there's no public sign-up page, so accounts are only created this way.
+
+## 2. Configure environment variables
+
+Copy `.env.local.example` to `.env.local` and fill in the two values from step 1:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.local.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxxx
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 3. Run it locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) and sign in with the account you created in step 1.
 
-To learn more about Next.js, take a look at the following resources:
+## 4. Deploy for free (Vercel)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push this project to a GitHub repo.
+2. Go to [vercel.com](https://vercel.com), create a free account, and import the repo.
+3. When prompted, add the same two environment variables from step 2 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+4. Deploy. Vercel gives you a live URL your team can use from anywhere.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Project files (design assets, exports, etc.) aren't uploaded into the CRM — each project just stores a link to its Google Drive folder, so storage stays free and unlimited.
+- Both `npm install` and `npm run dev`/`build` are configured to pull packages from the `registry.npmmirror.com` mirror (see `.npmrc`) because `registry.npmjs.org` was unreachable on the network this was built on. If your network can reach the npm registry directly, you can safely delete `.npmrc`.
