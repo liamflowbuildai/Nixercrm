@@ -105,9 +105,9 @@ export function DashboardView({
               sub={`Sales ${formatCurrency(fin.revenueThisYear.salesTotal)} · Web ${formatCurrency(fin.revenueThisYear.websiteTotal)}`}
             />
             <Figure
-              label="Maintenance (yearly)"
-              value={formatCurrency(fin.yearlyMaintenance.total)}
-              sub={`${fin.yearlyMaintenance.lines.length} website clients`}
+              label="Maintenance MRR"
+              value={`${formatCurrency(fin.monthlyMaintenance.total)}/mo`}
+              sub={`${fin.monthlyMaintenance.lines.length} clients · ${formatCurrency(fin.monthlyMaintenance.total * 12)}/yr`}
             />
           </FigureRow>
         </div>

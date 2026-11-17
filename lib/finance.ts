@@ -21,7 +21,7 @@ export type FinancialSummary = {
   outstanding: FinancialBreakdown;
   revenueThisMonth: FinancialBreakdown;
   revenueThisYear: FinancialBreakdown;
-  yearlyMaintenance: FinancialBreakdown;
+  monthlyMaintenance: FinancialBreakdown; // maintenance MRR
 };
 
 function toBreakdown(
@@ -185,11 +185,11 @@ export function computeFinancialSummary(
     ),
   );
 
-  // maintenance_fee is the annual maintenance amount, not monthly.
-  const yearlyMaintenance = toBreakdown(
+  // maintenance_fee is stored as the yearly amount; shown as monthly (MRR).
+  const monthlyMaintenance = toBreakdown(
     projects
       .filter((p) => isWebsite(p) && p.maintenance_setup_at != null)
-      .map((p) => ({ project: p, amount: p.maintenance_fee })),
+      .map((p) => ({ project: p, amount: (p.maintenance_fee ?? 0) / 12 })),
   );
 
   return {
@@ -197,6 +197,6 @@ export function computeFinancialSummary(
     outstanding,
     revenueThisMonth,
     revenueThisYear,
-    yearlyMaintenance,
+    monthlyMaintenance,
   };
 }
