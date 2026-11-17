@@ -1,13 +1,8 @@
-import { STAGES } from "./stages";
-import type { Project } from "./types";
+import { stageIndex } from "./stages";
+import { getPilotStatus, isLiveSalesClient, monthAmount } from "./sales";
+import type { Project, SalesMonth } from "./types";
 
-const PROJECT_COMPLETE_INDEX = STAGES.findIndex(
-  (s) => s.value === "project_complete",
-);
-
-function stageIndex(stage: Project["stage"]): number {
-  return STAGES.findIndex((s) => s.value === stage);
-}
+const PROJECT_COMPLETE_INDEX = stageIndex("project_complete");
 
 export type FinancialLine = {
   project: Project;
@@ -16,6 +11,8 @@ export type FinancialLine = {
 
 export type FinancialBreakdown = {
   total: number;
+  websiteTotal: number;
+  salesTotal: number;
   lines: FinancialLine[];
 };
 
@@ -35,17 +32,32 @@ function toBreakdown(
     .filter((line) => line.amount > 0)
     .sort((a, b) => b.amount - a.amount);
 
+  const sum = (filter: (l: FinancialLine) => boolean) =>
+    lines.filter(filter).reduce((acc, line) => acc + line.amount, 0);
+
   return {
-    total: lines.reduce((sum, line) => sum + line.amount, 0),
+    total: sum(() => true),
+    websiteTotal: sum((l) => l.project.client_type !== "sales_system"),
+    salesTotal: sum((l) => l.project.client_type === "sales_system"),
     lines,
   };
 }
 
-// Actual cash received per project — deposit and final/invoice payments
-// combined into a single total per job, whichever of the two (or both)
-// landed within the given period.
+function isWebsite(p: Project): boolean {
+  return p.client_type !== "sales_system";
+}
+
+function parseDate(dateStr: string): Date {
+  return new Date(`${dateStr.slice(0, 10)}T00:00:00`);
+}
+
+// Website: actual cash received — deposit and final invoice payment, whichever
+// (or both) landed within the period.
+// Sales System: onboarding fee in the month it was paid, plus calls held (and
+// any retainer) in the month they happened — counted when held, not when paid.
 function collectRevenueLines(
   projects: Project[],
+  months: SalesMonth[],
   matchesDate: (date: Date) => boolean,
 ) {
   const lines: Array<{ project: Project; amount: number }> = [];
@@ -53,15 +65,29 @@ function collectRevenueLines(
   for (const project of projects) {
     let amount = 0;
 
-    if (project.deposit_paid_at && project.deposit_amount) {
-      if (matchesDate(new Date(project.deposit_paid_at))) {
-        amount += project.deposit_amount;
+    if (isWebsite(project)) {
+      if (project.deposit_paid_at && project.deposit_amount) {
+        if (matchesDate(parseDate(project.deposit_paid_at))) {
+          amount += project.deposit_amount;
+        }
       }
-    }
-
-    if (project.invoice_paid_at) {
-      if (matchesDate(new Date(project.invoice_paid_at))) {
-        amount += (project.budget_amount ?? 0) - (project.deposit_amount ?? 0);
+      if (project.invoice_paid_at) {
+        if (matchesDate(parseDate(project.invoice_paid_at))) {
+          amount +=
+            (project.budget_amount ?? 0) - (project.deposit_amount ?? 0);
+        }
+      }
+    } else {
+      if (project.onboarding_paid_at && project.onboarding_fee) {
+        if (matchesDate(parseDate(project.onboarding_paid_at))) {
+          amount += project.onboarding_fee;
+        }
+      }
+      for (const m of months) {
+        if (m.project_id !== project.id) continue;
+        if (matchesDate(parseDate(m.month))) {
+          amount += monthAmount(project, m);
+        }
       }
     }
 
@@ -73,18 +99,22 @@ function collectRevenueLines(
   return lines;
 }
 
-export function computeFinancialSummary(projects: Project[]): FinancialSummary {
+export function computeFinancialSummary(
+  projects: Project[],
+  months: SalesMonth[] = [],
+): FinancialSummary {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
 
-  // Money remaining on jobs still being worked on (a paid deposit comes off
-  // the budget). Anything already at Project Complete or later belongs in
-  // "outstanding" instead, not here.
-  const pipelineValue = toBreakdown(
-    projects
+  // Website: money remaining on jobs still being worked on (a paid deposit
+  // comes off the budget). Sales System: what's still to come to hit the
+  // projection — unpaid onboarding + calls still owed under the guarantee.
+  const pipelineValue = toBreakdown([
+    ...projects
       .filter(
         (p) =>
+          isWebsite(p) &&
           p.invoice_paid_at == null &&
           stageIndex(p.stage) < PROJECT_COMPLETE_INDEX,
       )
@@ -92,14 +122,21 @@ export function computeFinancialSummary(projects: Project[]): FinancialSummary {
         project: p,
         amount: (p.budget_amount ?? 0) - (p.deposit_amount ?? 0),
       })),
-  );
+    ...projects
+      .filter(isLiveSalesClient)
+      .map((p) => ({
+        project: p,
+        amount: getPilotStatus(p, months).remainingProjected,
+      })),
+  ]);
 
-  // Work that's actually finished (Project Complete stage or later) but
-  // hasn't had an invoice payment recorded yet.
-  const outstanding = toBreakdown(
-    projects
+  // Website: finished work with no invoice payment recorded yet.
+  // Sales System: calls held (and retainers) not marked paid yet.
+  const outstanding = toBreakdown([
+    ...projects
       .filter(
         (p) =>
+          isWebsite(p) &&
           p.invoice_paid_at == null &&
           stageIndex(p.stage) >= PROJECT_COMPLETE_INDEX,
       )
@@ -107,17 +144,26 @@ export function computeFinancialSummary(projects: Project[]): FinancialSummary {
         project: p,
         amount: (p.budget_amount ?? 0) - (p.deposit_amount ?? 0),
       })),
-  );
+    ...projects
+      .filter((p) => !isWebsite(p))
+      .map((p) => ({
+        project: p,
+        amount: getPilotStatus(p, months).unpaidAmount,
+      })),
+  ]);
 
-  // Revenue = cash actually received — deposits count the moment they're
-  // paid, not just the final invoice payment.
   const revenueThisYear = toBreakdown(
-    collectRevenueLines(projects, (d) => d.getFullYear() === currentYear),
+    collectRevenueLines(
+      projects,
+      months,
+      (d) => d.getFullYear() === currentYear,
+    ),
   );
 
   const revenueThisMonth = toBreakdown(
     collectRevenueLines(
       projects,
+      months,
       (d) => d.getFullYear() === currentYear && d.getMonth() === currentMonth,
     ),
   );
@@ -125,7 +171,7 @@ export function computeFinancialSummary(projects: Project[]): FinancialSummary {
   // maintenance_fee is the annual maintenance amount, not monthly.
   const yearlyMaintenance = toBreakdown(
     projects
-      .filter((p) => p.maintenance_setup_at != null)
+      .filter((p) => isWebsite(p) && p.maintenance_setup_at != null)
       .map((p) => ({ project: p, amount: p.maintenance_fee })),
   );
 

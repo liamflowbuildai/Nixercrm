@@ -4,6 +4,8 @@ import type { Alert } from "@/lib/alerts";
 const TYPE_LABEL: Record<Alert["type"], string> = {
   renewal: "Renewal",
   follow_up: "Follow-up",
+  day21_review: "Day-21 review",
+  pilot_end: "Pilot ends",
 };
 
 export function NeedsAttention({ alerts }: { alerts: Alert[] }) {

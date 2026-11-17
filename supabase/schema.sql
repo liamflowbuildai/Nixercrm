@@ -11,12 +11,19 @@ create type project_stage as enum (
   'invoice_paid',
   'site_live',
   'maintenance_setup',
-  'testimonial_requested'
+  'testimonial_requested',
+  -- Sales System pipeline
+  'ss_call_booked','ss_projections','ss_call2_booked','ss_deciding',
+  'ss_agreed','ss_onboarding_paid','ss_onboarding','ss_ads_review',
+  'ss_ads_live','ss_day21_review','ss_review_done','ss_pilot_complete',
+  'ss_retained','ss_ended','ss_lost'
 );
 
 create table projects (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  client_type text not null default 'website'
+    check (client_type in ('website', 'sales_system')),
   client_name text,
   client_email text,
   client_phone text,
@@ -34,6 +41,11 @@ create table projects (
   renewal_date date,
   follow_up_date date,
   notes text,
+  onboarding_fee numeric,
+  onboarding_paid_at date,
+  price_per_call numeric,
+  guaranteed_calls integer,
+  pilot_start_date date,
   created_by uuid references auth.users,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -48,6 +60,26 @@ create table project_tasks (
 );
 
 create index project_tasks_project_id_idx on project_tasks(project_id);
+
+create table sales_call_months (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  month date not null,
+  calls_held integer not null default 0 check (calls_held >= 0),
+  retainer_amount numeric,
+  invoiced_at date,
+  paid_at date,
+  created_at timestamptz not null default now(),
+  unique (project_id, month)
+);
+
+alter table sales_call_months enable row level security;
+
+create policy "authenticated users can do anything with sales_call_months"
+  on sales_call_months for all
+  to authenticated
+  using (true)
+  with check (true);
 
 alter table projects enable row level security;
 alter table project_tasks enable row level security;
@@ -80,3 +112,6 @@ create trigger projects_set_updated_at
 -- Migration: if your database was created before `no_maintenance` existed
 -- above, run this once instead of the whole script:
 -- alter table projects add column no_maintenance boolean not null default false;
+
+-- Migration: databases created before Sales System clients existed should run
+-- supabase/migrations/2026-11-17-sales-system.sql instead of this script.

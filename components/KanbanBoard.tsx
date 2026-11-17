@@ -10,16 +10,22 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { STAGES, type ProjectStage } from "@/lib/stages";
-import type { Project } from "@/lib/types";
+import type { ProjectStage, StageOption } from "@/lib/stages";
+import type { Project, SalesMonth } from "@/lib/types";
 import { updateProjectStage } from "@/app/(app)/actions";
 import { KanbanColumn } from "./KanbanColumn";
 import { ProjectCard } from "./ProjectCard";
 
 export function KanbanBoard({
+  id,
+  stages,
   initialProjects,
+  months = [],
 }: {
+  id: string;
+  stages: readonly StageOption[];
   initialProjects: Project[];
+  months?: SalesMonth[];
 }) {
   const [projects, setProjects] = useState(initialProjects);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -59,22 +65,25 @@ export function KanbanBoard({
 
   return (
     <DndContext
-      id="project-kanban"
+      id={id}
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => (
+        {stages.map((stage) => (
           <KanbanColumn
             key={stage.value}
             stage={stage}
             projects={projects.filter((p) => p.stage === stage.value)}
+            months={months}
           />
         ))}
       </div>
       <DragOverlay>
-        {activeProject ? <ProjectCard project={activeProject} /> : null}
+        {activeProject ? (
+          <ProjectCard project={activeProject} months={months} />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

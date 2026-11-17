@@ -1,16 +1,18 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import type { Project } from "@/lib/types";
-import type { STAGES } from "@/lib/stages";
+import type { Project, SalesMonth } from "@/lib/types";
+import type { StageOption } from "@/lib/stages";
 import { DraggableProjectCard } from "./DraggableProjectCard";
 
 export function KanbanColumn({
   stage,
   projects,
+  months,
 }: {
-  stage: (typeof STAGES)[number];
+  stage: StageOption;
   projects: Project[];
+  months: SalesMonth[];
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.value });
 
@@ -29,7 +31,11 @@ export function KanbanColumn({
       </div>
       <div className="flex min-h-[48px] flex-col gap-2">
         {projects.map((project) => (
-          <DraggableProjectCard key={project.id} project={project} />
+          <DraggableProjectCard
+            key={project.id}
+            project={project}
+            months={months}
+          />
         ))}
       </div>
     </div>

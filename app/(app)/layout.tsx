@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./actions";
 
-export default function AppLayout({ children }: LayoutProps<"/">) {
+export default async function AppLayout({ children }: LayoutProps<"/">) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+
+  if (!data.user) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -12,7 +21,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             href="/projects/new"
             className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-fg"
           >
-            + New Project
+            + New Client
           </Link>
           <form action={signOut}>
             <button
