@@ -8,7 +8,7 @@ import { currentMonthKey, monthAmount, monthLabel } from "@/lib/sales";
 import type { Project, SalesMonth } from "@/lib/types";
 
 const input =
-  "rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm text-fg outline-none focus:border-accent";
+  "rounded-xl border border-border-strong bg-bg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent";
 
 export function SalesMonthLog({
   project,
@@ -56,7 +56,7 @@ export function SalesMonthLog({
         </label>
         <button
           type="submit"
-          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-fg"
+          className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-accent-fg transition-colors hover:bg-accent-lt"
         >
           + Add calls
         </button>

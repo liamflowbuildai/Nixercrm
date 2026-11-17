@@ -16,7 +16,7 @@ export function ProjectCard({
   const pilot = isSales ? getPilotStatus(project, months) : null;
 
   return (
-    <div className="rounded-md border border-border bg-surface-2 p-3 text-sm">
+    <div className="rounded-xl border border-border bg-surface-2 p-3 text-sm transition-colors hover:border-border-strong">
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/projects/${project.id}`}

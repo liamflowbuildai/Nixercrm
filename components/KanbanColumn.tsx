@@ -19,12 +19,12 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-64 shrink-0 flex-col rounded-lg border p-2 transition-colors ${
-        isOver ? "border-accent bg-surface-1" : "border-border bg-surface-1/60"
+      className={`flex w-64 shrink-0 flex-col rounded-2xl border p-2 transition-colors ${
+        isOver ? "border-accent bg-surface-2" : "border-border bg-surface-1"
       }`}
     >
       <div className="mb-2 flex items-center justify-between px-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+        <h3 className="font-mono text-[11px] uppercase tracking-wide text-muted">
           {stage.label}
         </h3>
         <span className="text-xs text-muted">{projects.length}</span>

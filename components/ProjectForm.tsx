@@ -35,7 +35,7 @@ export function ProjectForm({
           <select
             name="stage"
             defaultValue={d.stage ?? stages[0].value}
-            className="rounded-md border border-border bg-surface-2 px-3 py-2 text-fg outline-none focus:border-accent"
+            className="rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
           >
             {stages.map((stage) => (
               <option key={stage.value} value={stage.value}>
@@ -178,13 +178,13 @@ export function ProjectForm({
           name="notes"
           defaultValue={d.notes ?? ""}
           rows={4}
-          className="rounded-md border border-border bg-surface-2 px-3 py-2 text-fg outline-none focus:border-accent"
+          className="rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
         />
       </label>
 
       <button
         type="submit"
-        className="w-fit rounded-md bg-accent px-5 py-2 font-medium text-accent-fg"
+        className="w-fit rounded-full bg-accent px-5 py-2 font-semibold text-accent-fg transition-colors hover:bg-accent-lt"
       >
         {submitLabel}
       </button>
@@ -215,7 +215,7 @@ function Field({
         type={type}
         defaultValue={defaultValue ?? ""}
         required={required}
-        className="rounded-md border border-border bg-surface-2 px-3 py-2 text-fg outline-none focus:border-accent"
+        className="rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
       />
       {hint && <span className="text-xs text-muted">{hint}</span>}
     </label>

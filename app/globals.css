@@ -1,38 +1,74 @@
 @import "tailwindcss";
 
+/* FlowBuild AI brand — matched to flowbuildai.ie */
 :root {
-  --bg: #18150d;
-  --surface-1: #201c11;
-  --surface-2: #282214;
-  --fg: #f2ead4;
-  --muted: #a89f8d;
-  --border: #3a331f;
-  --accent: #e8622a;
-  --accent-fg: #18150d;
-  --danger: #d64545;
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface-1: #111110;
+  --surface-2: #181716;
+  --surface-3: #222120;
+  --fg: #f5f4f2;
+  --muted: #a3a09b;
+  --dim: #6e6b66;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --accent: #e8652a;
+  --accent-lt: #f7935f;
+  --accent-dk: #c4501b;
+  --accent-fg: #ffffff;
+  --ok: #4ade80;
+  --danger: #f87171;
+  /* chart series (validated: dark mode, surface #111110) */
+  --series-web: #3987e5;
+  --series-sales: #e8652a;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
+  --color-dim: var(--dim);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-lt: var(--accent-lt);
   --color-accent-fg: var(--accent-fg);
+  --color-ok: var(--ok);
   --color-danger: var(--danger);
-  --font-sans: var(--font-inter);
+  --color-series-web: var(--series-web);
+  --color-series-sales: var(--series-sales);
+  --font-sans: var(--font-inter-tight);
+  --font-mono: var(--font-jetbrains);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   border-color: var(--border);
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.03em;
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
 summary {

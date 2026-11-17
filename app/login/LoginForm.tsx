@@ -14,7 +14,7 @@ export function LoginForm() {
       </div>
       <form
         action={action}
-        className="w-full max-w-sm rounded-lg border border-border bg-surface-1 p-8"
+        className="w-full max-w-sm rounded-3xl border border-border-strong bg-surface-1 p-8"
       >
         <h1 className="mb-6 text-lg font-semibold text-fg">Sign in</h1>
 
@@ -27,7 +27,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          className="mb-4 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-fg outline-none focus:border-accent"
+          className="mb-4 w-full rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
         />
 
         <label className="mb-1 block text-sm text-muted" htmlFor="password">
@@ -39,7 +39,7 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="mb-6 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-fg outline-none focus:border-accent"
+          className="mb-6 w-full rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
         />
 
         {state?.error && (
@@ -49,7 +49,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-accent px-4 py-2 font-medium text-accent-fg disabled:opacity-60"
+          className="w-full rounded-full bg-accent px-4 py-2 font-semibold text-accent-fg transition-colors hover:bg-accent-lt disabled:opacity-60"
         >
           {pending ? "Signing in…" : "Sign in"}
         </button>

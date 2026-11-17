@@ -35,7 +35,7 @@ export function TaskList({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface-1 p-4">
+    <div className="border-t border-border pt-4">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
         To-dos
       </h2>
@@ -73,12 +73,12 @@ export function TaskList({
         <input
           name="title"
           placeholder="Add a to-do…"
-          className="flex-1 rounded-md border border-border bg-surface-2 px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
+          className="flex-1 rounded-xl border border-border-strong bg-bg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent"
         />
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-fg hover:border-accent"
+          className="rounded-full border border-border-strong px-3 py-1.5 text-sm text-fg hover:border-accent"
         >
           Add
         </button>

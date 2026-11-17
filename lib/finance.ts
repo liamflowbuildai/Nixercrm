@@ -99,6 +99,23 @@ function collectRevenueLines(
   return lines;
 }
 
+// Revenue for one calendar month, split by client type (for trend charts).
+export function revenueForMonth(
+  projects: Project[],
+  months: SalesMonth[],
+  year: number,
+  month: number,
+): { web: number; sales: number } {
+  const b = toBreakdown(
+    collectRevenueLines(
+      projects,
+      months,
+      (d) => d.getFullYear() === year && d.getMonth() === month,
+    ),
+  );
+  return { web: b.websiteTotal, sales: b.salesTotal };
+}
+
 export function computeFinancialSummary(
   projects: Project[],
   months: SalesMonth[] = [],

@@ -57,7 +57,7 @@ export default async function ProjectDetailPage(
           </form>
         </div>
         {warnings.length > 0 && (
-          <div className="mb-6 flex flex-col gap-1 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+          <div className="mb-6 flex flex-col gap-1 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
             {warnings.map((warning) => (
               <p key={warning}>⚠ {warning}</p>
             ))}

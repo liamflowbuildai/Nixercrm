@@ -15,7 +15,7 @@ export default async function NewProjectPage(props: PageProps<"/projects/new">) 
           <Link
             key={t.value}
             href={`/projects/new?type=${t.value}`}
-            className={`rounded-md border px-4 py-2 text-sm ${
+            className={`rounded-full border px-4 py-2 text-sm ${
               t.value === clientType
                 ? "border-accent bg-accent/10 text-fg"
                 : "border-border text-muted hover:text-fg"
