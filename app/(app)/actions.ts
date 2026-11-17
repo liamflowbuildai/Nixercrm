@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
+  isLostStage,
   parseClientType,
   stageIndex,
   stagesFor,
@@ -27,6 +28,44 @@ function needsPilotStart(stage: ProjectStage | undefined): boolean {
   if (!stage || !stage.startsWith("ss_")) return false;
   const idx = stageIndex(stage);
   return idx >= stageIndex("ss_ads_live") && idx < stageIndex("ss_ended");
+}
+
+// Lost tracking: moving a deal into Lost records the stage it was lost at
+// and the date; moving it back out clears both. A stage picked on the form
+// (to correct or backfill it) wins over the automatic one.
+async function lostFields(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  projectId: string | null,
+  newStage: ProjectStage | undefined,
+  pickedFrom: ProjectStage | null = null,
+): Promise<Record<string, unknown>> {
+  if (!newStage) return {};
+  let existing: { stage: ProjectStage; lost_from_stage: ProjectStage | null; lost_at: string | null } | null = null;
+  if (projectId) {
+    const { data } = await supabase
+      .from("projects")
+      .select("stage, lost_from_stage, lost_at")
+      .eq("id", projectId)
+      .single();
+    existing = data;
+  }
+  if (!isLostStage(newStage)) {
+    return existing?.lost_from_stage || existing?.lost_at
+      ? { lost_from_stage: null, lost_at: null }
+      : {};
+  }
+  const autoFrom =
+    existing && !isLostStage(existing.stage) ? existing.stage : existing?.lost_from_stage ?? null;
+  return {
+    lost_from_stage: pickedFrom ?? autoFrom,
+    lost_at: existing?.lost_at ?? toDateInput(new Date()),
+  };
+}
+
+function parseLostFrom(formData: FormData, type: ClientType): ProjectStage | null {
+  const value = formData.get("lost_from_stage");
+  const match = stagesFor(type).find((s) => s.value === value && !isLostStage(s.value));
+  return match?.value ?? null;
 }
 
 function salesFields(formData: FormData) {
@@ -105,6 +144,8 @@ export async function createProject(formData: FormData) {
     typeFields.pilot_start_date = toDateInput(new Date());
   }
 
+  const lost = await lostFields(supabase, null, stage, parseLostFrom(formData, clientType));
+
   const { data, error } = await supabase
     .from("projects")
     .insert({
@@ -116,6 +157,7 @@ export async function createProject(formData: FormData) {
       client_phone: optionalString(formData, "client_phone"),
       folder_url: optionalString(formData, "folder_url"),
       ...typeFields,
+      ...lost,
       created_by: userData.user?.id ?? null,
     })
     .select("id")
@@ -153,6 +195,12 @@ export async function updateProject(projectId: string, formData: FormData) {
   }
 
   const supabase = await createClient();
+  const lost = await lostFields(
+    supabase,
+    projectId,
+    stage,
+    parseLostFrom(formData, clientType),
+  );
   const { error } = await supabase
     .from("projects")
     .update({
@@ -165,6 +213,7 @@ export async function updateProject(projectId: string, formData: FormData) {
       follow_up_date: optionalString(formData, "follow_up_date"),
       notes: optionalString(formData, "notes"),
       ...typeFields,
+      ...lost,
     })
     .eq("id", projectId);
 
@@ -181,7 +230,10 @@ export async function updateProjectStage(
   stage: ProjectStage,
 ) {
   const supabase = await createClient();
-  const update: Record<string, unknown> = { stage };
+  const update: Record<string, unknown> = {
+    stage,
+    ...(await lostFields(supabase, projectId, stage)),
+  };
 
   if (needsPilotStart(stage)) {
     const { data: existing } = await supabase

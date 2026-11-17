@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format";
 import { getPilotStatus } from "@/lib/sales";
+import { isLostStage, stageLabel } from "@/lib/stages";
 import { getProjectWarnings } from "@/lib/warnings";
 import type { Project, SalesMonth } from "@/lib/types";
 
@@ -45,7 +46,11 @@ export function ProjectCard({
       {project.client_name && (
         <p className="mt-1 text-muted">{project.client_name}</p>
       )}
-      {pilot ? (
+      {isLostStage(project.stage) ? (
+        <p className="mt-1 text-xs text-dim">
+          Lost at {project.lost_from_stage ? stageLabel(project.lost_from_stage) : "unknown stage"}
+        </p>
+      ) : pilot ? (
         pilot.projectedValue > 0 && (
           <p className="mt-1 text-xs text-muted">
             {formatCurrency(pilot.projectedValue)} projected

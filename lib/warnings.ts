@@ -11,6 +11,7 @@ export function getProjectWarnings(
   }
 
   const warnings: string[] = [];
+  if (project.stage === "lost") return warnings;
 
   if (
     project.invoice_paid_at == null &&

@@ -24,6 +24,7 @@ export const WEBSITE_STAGES = [
   { value: "site_live", label: "Site Live" },
   { value: "maintenance_setup", label: "Maintenance Invoice Set Up" },
   { value: "testimonial_requested", label: "Testimonial Requested" },
+  { value: "lost", label: "Lost" },
 ] as const;
 
 // Sales System clients: € onboarding + € per held call, 90-day pilot.
@@ -43,7 +44,7 @@ export const SALES_STAGES = [
   { value: "ss_pilot_complete", label: "Pilot Complete" },
   { value: "ss_retained", label: "Retained" },
   { value: "ss_ended", label: "Ended" },
-  { value: "ss_lost", label: "Didn't Proceed" },
+  { value: "ss_lost", label: "Lost" },
 ] as const;
 
 export const STAGES = [...WEBSITE_STAGES, ...SALES_STAGES] as const;
@@ -66,6 +67,16 @@ export function stageIndex(stage: ProjectStage): number {
   const web = WEBSITE_STAGES.findIndex((s) => s.value === stage);
   if (web !== -1) return web;
   return SALES_STAGES.findIndex((s) => s.value === stage);
+}
+
+export const LOST_STAGES: readonly ProjectStage[] = ["lost", "ss_lost"];
+
+export function isLostStage(stage: ProjectStage | null | undefined): boolean {
+  return stage === "lost" || stage === "ss_lost";
+}
+
+export function lostStageFor(type: ClientType): ProjectStage {
+  return type === "sales_system" ? "ss_lost" : "lost";
 }
 
 export function isSalesStage(stage: ProjectStage): boolean {

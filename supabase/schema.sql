@@ -16,7 +16,8 @@ create type project_stage as enum (
   'ss_call_booked','ss_projections','ss_call2_booked','ss_deciding',
   'ss_agreed','ss_onboarding_paid','ss_onboarding','ss_ads_review',
   'ss_ads_live','ss_day21_review','ss_review_done','ss_pilot_complete',
-  'ss_retained','ss_ended','ss_lost'
+  'ss_retained','ss_ended','ss_lost',
+  'lost'
 );
 
 create table projects (
@@ -46,6 +47,8 @@ create table projects (
   price_per_call numeric,
   guaranteed_calls integer,
   pilot_start_date date,
+  lost_from_stage project_stage,
+  lost_at date,
   created_by uuid references auth.users,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

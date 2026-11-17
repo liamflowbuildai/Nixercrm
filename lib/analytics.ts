@@ -64,12 +64,13 @@ const WEBSITE_STEPS: StepDef[] = [
   { label: "Site live", stage: "site_live" },
 ];
 
-// How far down the pipeline a deal has got. "Didn't Proceed" only tells us
-// they had a first call; "Ended" clients finished the pilot. Recorded
-// payments also prove a deal got at least that far.
+// How far down the pipeline a deal has got. Lost deals count up to the stage
+// they were lost at (or only the first step if that wasn't recorded);
+// "Ended" clients finished the pilot. Recorded payments also prove a deal got
+// at least that far.
 function furthestSalesIndex(p: Project): number {
   let idx = stageIndex(p.stage);
-  if (p.stage === "ss_lost") idx = 0;
+  if (p.stage === "ss_lost") idx = p.lost_from_stage ? stageIndex(p.lost_from_stage) : 0;
   if (p.stage === "ss_ended") idx = stageIndex("ss_pilot_complete");
   if (p.onboarding_paid_at) idx = Math.max(idx, stageIndex("ss_onboarding_paid"));
   if (p.pilot_start_date) idx = Math.max(idx, stageIndex("ss_ads_live"));
@@ -78,6 +79,7 @@ function furthestSalesIndex(p: Project): number {
 
 function furthestWebsiteIndex(p: Project): number {
   let idx = stageIndex(p.stage);
+  if (p.stage === "lost") idx = p.lost_from_stage ? stageIndex(p.lost_from_stage) : 0;
   if (p.deposit_paid_at) idx = Math.max(idx, stageIndex("deposit_paid"));
   if (p.invoice_paid_at) idx = Math.max(idx, stageIndex("invoice_paid"));
   return idx;
@@ -150,6 +152,38 @@ export function websiteRates(f: FunnelStep[]) {
   };
 }
 
+// ---------- lost deals ----------
+
+export type LostSummary = {
+  total: number;
+  lost: number;
+  lostRate: number | null; // lost ÷ all deals added in the period
+  byStage: Array<{ stage: ProjectStage; label: string; count: number }>;
+  unknown: number; // lost before "lost at stage" was recorded
+};
+
+export function lostSummary(
+  projects: Project[],
+  stages: readonly StageOption[],
+): LostSummary {
+  const lostDeals = projects.filter((p) => p.stage === "lost" || p.stage === "ss_lost");
+  const byStage = stages
+    .filter((s) => s.value !== "lost" && s.value !== "ss_lost")
+    .map((s) => ({
+      stage: s.value,
+      label: s.label,
+      count: lostDeals.filter((p) => p.lost_from_stage === s.value).length,
+    }))
+    .filter((s) => s.count > 0);
+  return {
+    total: projects.length,
+    lost: lostDeals.length,
+    lostRate: projects.length ? lostDeals.length / projects.length : null,
+    byStage,
+    unknown: lostDeals.filter((p) => !p.lost_from_stage).length,
+  };
+}
+
 // ---------- bottlenecks: where open deals are sitting ----------
 
 export const STALE_DAYS = 14;
@@ -165,6 +199,7 @@ export type StageLoad = {
 const CLOSED_STAGES: ProjectStage[] = [
   "ss_ended",
   "ss_lost",
+  "lost",
   "testimonial_requested",
 ];
 

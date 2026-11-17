@@ -27,6 +27,9 @@ export type Project = {
   price_per_call: number | null;
   guaranteed_calls: number | null;
   pilot_start_date: string | null;
+  // Lost deals: the stage they were at when lost, and when
+  lost_from_stage: ProjectStage | null;
+  lost_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

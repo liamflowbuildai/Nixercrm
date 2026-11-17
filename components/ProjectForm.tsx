@@ -1,4 +1,4 @@
-import { stagesFor, type ClientType } from "@/lib/stages";
+import { isLostStage, stagesFor, type ClientType } from "@/lib/stages";
 import { DEFAULT_ONBOARDING_FEE, DEFAULT_PRICE_PER_CALL } from "@/lib/sales";
 import type { Project } from "@/lib/types";
 
@@ -44,6 +44,28 @@ export function ProjectForm({
             ))}
           </select>
         </label>
+        {isLostStage(d.stage) && (
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-muted">Lost at stage</span>
+            <select
+              name="lost_from_stage"
+              defaultValue={d.lost_from_stage ?? ""}
+              className="rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
+            >
+              <option value="">Not recorded</option>
+              {stages
+                .filter((s) => !isLostStage(s.value))
+                .map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+            </select>
+            <span className="text-xs text-muted">
+              Filled in automatically when a deal is moved to Lost. Used for conversion rates.
+            </span>
+          </label>
+        )}
         <Field label="Client name" name="client_name" defaultValue={d.client_name} />
         <Field
           label="Client email"

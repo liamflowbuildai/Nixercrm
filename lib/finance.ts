@@ -47,6 +47,10 @@ function isWebsite(p: Project): boolean {
   return p.client_type !== "sales_system";
 }
 
+function isOpenWebsite(p: Project): boolean {
+  return isWebsite(p) && p.stage !== "lost";
+}
+
 function parseDate(dateStr: string): Date {
   return new Date(`${dateStr.slice(0, 10)}T00:00:00`);
 }
@@ -131,7 +135,7 @@ export function computeFinancialSummary(
     ...projects
       .filter(
         (p) =>
-          isWebsite(p) &&
+          isOpenWebsite(p) &&
           p.invoice_paid_at == null &&
           stageIndex(p.stage) < PROJECT_COMPLETE_INDEX,
       )
@@ -153,7 +157,7 @@ export function computeFinancialSummary(
     ...projects
       .filter(
         (p) =>
-          isWebsite(p) &&
+          isOpenWebsite(p) &&
           p.invoice_paid_at == null &&
           stageIndex(p.stage) >= PROJECT_COMPLETE_INDEX,
       )

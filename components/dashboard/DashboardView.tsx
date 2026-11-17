@@ -3,6 +3,7 @@ import { NeedsAttention } from "@/components/NeedsAttention";
 import { ActivePilotsList } from "@/components/ActivePilotsList";
 import { Funnel } from "@/components/charts/Funnel";
 import { StageLoadBars } from "@/components/charts/StageLoadBars";
+import { LostBars } from "@/components/charts/LostBars";
 import { Figure, FigureRow, Panel, Section } from "@/components/dashboard/Figure";
 import { RangeFilter } from "@/components/dashboard/RangeFilter";
 import { CallsTrend, DealsTrend, RevenueTrend } from "@/components/dashboard/RevenueTrend";
@@ -12,6 +13,7 @@ import {
   STALE_DAYS,
   callsTrend,
   inRange,
+  lostSummary,
   newDealsTrend,
   type RangeValue,
   revenueTrend,
@@ -56,6 +58,8 @@ export function DashboardView({
   const webInRange = websiteProjects.filter((p) => inRange(p.created_at, range));
   const sFunnel = salesFunnel(salesInRange);
   const wFunnel = websiteFunnel(webInRange);
+  const sLost = lostSummary(salesInRange, SALES_STAGES);
+  const wLost = lostSummary(webInRange, WEBSITE_STAGES);
   const sRates = salesRates(sFunnel);
   const wRates = websiteRates(wFunnel);
   const sales = salesHeadline(salesProjects, months);
@@ -136,6 +140,24 @@ export function DashboardView({
           </Panel>
           <Panel title="Website funnel" sub={`${webInRange.length} deals added, ${rangeLabel}`}>
             <Funnel steps={wFunnel} color="var(--series-web)" />
+          </Panel>
+        </div>
+      </Section>
+
+      {/* ---------- Lost ---------- */}
+      <Section title="Lost deals" aside={<span className="text-xs text-dim">Deals added, {rangeLabel}</span>}>
+        <div className="grid gap-10 lg:grid-cols-2">
+          <Panel
+            title={`Sales System: ${pct(sLost.lostRate)} lost`}
+            sub={`${sLost.lost} of ${sLost.total} deals. Where they were lost:`}
+          >
+            <LostBars summary={sLost} color="var(--series-sales)" />
+          </Panel>
+          <Panel
+            title={`Websites: ${pct(wLost.lostRate)} lost`}
+            sub={`${wLost.lost} of ${wLost.total} deals. Where they were lost:`}
+          >
+            <LostBars summary={wLost} color="var(--series-web)" />
           </Panel>
         </div>
       </Section>
