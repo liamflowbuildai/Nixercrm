@@ -21,7 +21,11 @@ export default async function WebsitePipelinePage() {
         <Figure label="Pipeline value" value={formatCurrency(fin.pipelineValue.total)} sub="Remaining on jobs in progress" />
         <Figure label="Outstanding" value={formatCurrency(fin.outstanding.total)} sub="Finished, not paid yet" />
         <Figure label={`Revenue ${new Date().getFullYear()}`} value={formatCurrency(fin.revenueThisYear.total)} />
-        <Figure label="Maintenance (yearly)" value={formatCurrency(fin.yearlyMaintenance.total)} />
+        <Figure
+          label="Maintenance MRR"
+          value={`${formatCurrency(fin.monthlyMaintenance.total)}/mo`}
+          sub={`${fin.monthlyMaintenance.lines.length} clients · ${formatCurrency(fin.monthlyMaintenance.total * 12)}/yr`}
+        />
       </FigureRow>
       <KanbanBoard
         id="website-kanban"

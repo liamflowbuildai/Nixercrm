@@ -78,6 +78,25 @@ function salesFields(formData: FormData) {
   };
 }
 
+// The form takes maintenance per month; the database keeps the yearly
+// figure (as it always has), so existing records don't change.
+function monthlyToYearly(monthly: number | null): number | null {
+  return monthly == null ? null : Math.round(monthly * 12 * 100) / 100;
+}
+
+const toMonthly = (yearly: number) => Math.round((yearly / 12) * 100) / 100;
+
+// If the monthly figure wasn't edited, keep the exact yearly value already
+// stored (e.g. €500/yr shows as €41.67/mo and must not become €500.04).
+function maintenanceYearly(formData: FormData): number | null {
+  const monthly = optionalNumber(formData, "maintenance_monthly");
+  const original = optionalNumber(formData, "maintenance_fee_original");
+  if (monthly != null && original != null && toMonthly(original) === monthly) {
+    return original;
+  }
+  return monthlyToYearly(monthly);
+}
+
 function websiteFields(formData: FormData) {
   return {
     live_url: optionalString(formData, "live_url"),
@@ -85,7 +104,7 @@ function websiteFields(formData: FormData) {
     deposit_amount: optionalNumber(formData, "deposit_amount"),
     deposit_paid_at: optionalString(formData, "deposit_paid_at"),
     invoice_paid_at: optionalString(formData, "invoice_paid_at"),
-    maintenance_fee: optionalNumber(formData, "maintenance_fee"),
+    maintenance_fee: maintenanceYearly(formData),
     maintenance_setup_at: optionalString(formData, "maintenance_setup_at"),
     no_maintenance: checkbox(formData, "no_maintenance"),
     launch_date: optionalString(formData, "launch_date"),
@@ -131,11 +150,7 @@ export async function createProject(formData: FormData) {
   const typeFields: Record<string, unknown> =
     clientType === "sales_system"
       ? salesFields(formData)
-      : {
-          live_url: optionalString(formData, "live_url"),
-          budget_amount: optionalNumber(formData, "budget_amount"),
-          no_maintenance: checkbox(formData, "no_maintenance"),
-        };
+      : websiteFields(formData);
   if (
     clientType === "sales_system" &&
     needsPilotStart(stage) &&

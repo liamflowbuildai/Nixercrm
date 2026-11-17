@@ -23,6 +23,9 @@ export function ProjectForm({
   return (
     <form action={action} className="flex max-w-2xl flex-col gap-6">
       <input type="hidden" name="client_type" value={clientType} />
+      {d.maintenance_fee != null && (
+        <input type="hidden" name="maintenance_fee_original" value={d.maintenance_fee} />
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           label={isSales ? "Client / business name" : "Project name"}
@@ -148,10 +151,15 @@ export function ProjectForm({
               defaultValue={d.invoice_paid_at}
             />
             <Field
-              label="Maintenance fee (€/yr)"
-              name="maintenance_fee"
+              label="Maintenance (€/month)"
+              name="maintenance_monthly"
               type="number"
-              defaultValue={d.maintenance_fee}
+              step="0.01"
+              defaultValue={
+                d.maintenance_fee != null
+                  ? Math.round((d.maintenance_fee / 12) * 100) / 100
+                  : null
+              }
             />
             <Field
               label="Maintenance set up on"
@@ -221,10 +229,12 @@ function Field({
   defaultValue,
   required,
   hint,
+  step,
 }: {
   label: string;
   name: string;
   type?: string;
+  step?: string;
   defaultValue?: string | number | null;
   required?: boolean;
   hint?: string;
@@ -237,6 +247,7 @@ function Field({
         type={type}
         defaultValue={defaultValue ?? ""}
         required={required}
+        step={step}
         className="rounded-xl border border-border-strong bg-bg px-3 py-2 text-fg outline-none focus:border-accent"
       />
       {hint && <span className="text-xs text-muted">{hint}</span>}
