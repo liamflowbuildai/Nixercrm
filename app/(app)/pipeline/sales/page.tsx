@@ -13,6 +13,7 @@ export default async function SalesPipelinePage() {
   const fin = computeFinancialSummary(salesProjects, months);
   const head = salesHeadline(salesProjects, months);
   const pilots = salesProjects.filter(isInPilot);
+  const monthName = new Date().toLocaleString("en-IE", { month: "long" });
 
   return (
     <div className="flex flex-col gap-10">
@@ -22,8 +23,9 @@ export default async function SalesPipelinePage() {
           €1,000 onboarding + per booked call, 90-day pilot. Drag a card to move it.
         </p>
       </div>
-      <FigureRow cols={4}>
+      <FigureRow cols={5}>
         <Figure label="Still to come" value={formatCurrency(fin.pipelineValue.total)} sub="Unpaid onboarding + calls owed" />
+        <Figure label={`Revenue in ${monthName}`} value={formatCurrency(fin.revenueThisMonth.total)} sub="Onboarding + calls held" />
         <Figure label="Made so far" value={formatCurrency(head.earned)} sub={`of ${formatCurrency(head.projected)} projected`} />
         <Figure label="Outstanding" value={formatCurrency(fin.outstanding.total)} sub="Calls held, not paid yet" />
         <Figure label="Pilots running" value={pilots.length} sub={`${head.callsHeld} / ${head.guaranteed} calls held`} />
