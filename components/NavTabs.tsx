@@ -7,6 +7,7 @@ const TABS = [
   { href: "/", label: "Dashboard" },
   { href: "/pipeline/sales", label: "Sales Pipeline" },
   { href: "/pipeline/website", label: "Website Pipeline" },
+  { href: "/accounts", label: "Accounts" },
 ];
 
 export function NavTabs() {
