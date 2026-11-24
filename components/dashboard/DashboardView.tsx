@@ -25,6 +25,7 @@ import {
 } from "@/lib/analytics";
 import { computeFinancialSummary } from "@/lib/finance";
 import { formatCurrency } from "@/lib/format";
+import { expenseTotal, expensesForMonth, hasExpenseData } from "@/lib/expenses";
 import { isInPilot } from "@/lib/sales";
 import { SALES_STAGES, WEBSITE_STAGES, stageLabel } from "@/lib/stages";
 import type { Project, SalesMonth } from "@/lib/types";
@@ -61,7 +62,13 @@ export function DashboardView({
   const sales = salesHeadline(salesProjects, months);
   const stale = staleDeals(projects);
   const alerts = computeAlerts(projects);
-  const monthName = new Date().toLocaleString("en-IE", { month: "long" });
+  const now = new Date();
+  const monthName = now.toLocaleString("en-IE", { month: "long" });
+  const expenseItems = expensesForMonth(now.getFullYear(), now.getMonth());
+  const expenses = expenseTotal(now.getFullYear(), now.getMonth());
+  const showProfit = hasExpenseData(now.getFullYear(), now.getMonth());
+  const profit = thisTotal - expenses;
+  const margin = thisTotal > 0 ? Math.round((profit / thisTotal) * 100) : null;
 
   return (
     <div className="flex flex-col gap-14">
@@ -82,6 +89,52 @@ export function DashboardView({
               vs {lastMonth.label} · Sales {formatCurrency(thisMonth.sales)} · Web{" "}
               {formatCurrency(thisMonth.web)}
             </p>
+
+            <div className="mt-8 border-t border-border pt-4">
+              <p className="text-sm text-muted">Profit in {monthName}</p>
+              {showProfit ? (
+                <>
+                  <p
+                    className={`mt-2 text-[40px] font-semibold leading-none tracking-[-0.045em] ${
+                      profit >= 0 ? "text-fg" : "text-danger"
+                    }`}
+                  >
+                    {profit < 0 && "−"}
+                    {formatCurrency(Math.abs(profit))}
+                  </p>
+                  <p className="mt-3 text-sm text-muted">
+                    Revenue {formatCurrency(thisTotal)} − expenses {formatCurrency(expenses)}
+                    {margin != null && ` · ${margin}% margin`}
+                  </p>
+                  <details className="mt-3 text-sm">
+                    <summary className="cursor-pointer text-xs text-dim hover:text-muted">
+                      {expenseItems.length} expenses this month
+                    </summary>
+                    <ul className="mt-2 flex flex-col">
+                      {expenseItems
+                        .slice()
+                        .sort((a, b) => b.amount - a.amount)
+                        .map((e) => (
+                          <li
+                            key={e.name}
+                            className="flex justify-between gap-4 border-b border-border py-1.5"
+                          >
+                            <span className="text-muted">
+                              {e.name}
+                              {!e.recurring && <span className="ml-1.5 text-xs text-dim">one-off</span>}
+                            </span>
+                            <span className="tnum text-fg">{formatCurrency(e.amount)}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </details>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-dim">
+                  Expenses not added yet. Read them out to Claude and this fills in.
+                </p>
+              )}
+            </div>
           </div>
           <Panel title="Revenue, last 6 months" sub="Cash in for websites; held calls + onboarding for sales clients">
             <RevenueTrend data={trend} />

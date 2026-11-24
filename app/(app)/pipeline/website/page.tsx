@@ -10,6 +10,7 @@ export default async function WebsitePipelinePage() {
   const { websiteProjects, months } = await loadCrmData();
   const fin = computeFinancialSummary(websiteProjects, months);
   const active = websiteProjects.filter((p) => p.stage === "project_underway");
+  const monthName = new Date().toLocaleString("en-IE", { month: "long" });
 
   return (
     <div className="flex flex-col gap-10">
@@ -17,9 +18,10 @@ export default async function WebsitePipelinePage() {
         <h1 className="text-2xl font-semibold text-fg">Website pipeline</h1>
         <p className="mt-1 text-sm text-muted">Website builds from first call to testimonial. Drag a card to move it.</p>
       </div>
-      <FigureRow cols={4}>
+      <FigureRow cols={5}>
         <Figure label="Pipeline value" value={formatCurrency(fin.pipelineValue.total)} sub="Remaining on jobs in progress" />
         <Figure label="Outstanding" value={formatCurrency(fin.outstanding.total)} sub="Finished, not paid yet" />
+        <Figure label={`Revenue in ${monthName}`} value={formatCurrency(fin.revenueThisMonth.total)} sub="Deposits + final payments" />
         <Figure label={`Revenue ${new Date().getFullYear()}`} value={formatCurrency(fin.revenueThisYear.total)} />
         <Figure
           label="Maintenance MRR"
