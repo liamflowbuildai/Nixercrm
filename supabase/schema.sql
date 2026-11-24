@@ -49,6 +49,9 @@ create table projects (
   pilot_start_date date,
   lost_from_stage project_stage,
   lost_at date,
+  maintenance_billing text not null default 'yearly'
+    check (maintenance_billing in ('monthly', 'yearly')),
+  monthly_billing_from date,
   created_by uuid references auth.users,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -129,3 +132,16 @@ create table ad_spend (
 alter table ad_spend enable row level security;
 create policy "authenticated users can do anything with ad_spend"
   on ad_spend for all to authenticated using (true) with check (true);
+
+create table maintenance_payments (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  paid_at date not null,
+  amount numeric not null,
+  covers_until date,
+  note text,
+  created_at timestamptz not null default now()
+);
+alter table maintenance_payments enable row level security;
+create policy "authenticated users can do anything with maintenance_payments"
+  on maintenance_payments for all to authenticated using (true) with check (true);

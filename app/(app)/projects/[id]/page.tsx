@@ -7,7 +7,9 @@ import { SalesMonthLog } from "@/components/SalesMonthLog";
 import { updateProject, deleteProject } from "@/app/(app)/actions";
 import { clientTypeLabel, parseClientType, stageLabel } from "@/lib/stages";
 import { getProjectWarnings } from "@/lib/warnings";
-import type { Project, ProjectTask, SalesMonth } from "@/lib/types";
+import type { MaintenancePayment, Project, ProjectTask, SalesMonth } from "@/lib/types";
+import { YearlyMaintenancePanel } from "@/components/YearlyMaintenancePanel";
+import { billingOf } from "@/lib/maintenance";
 
 export default async function ProjectDetailPage(
   props: PageProps<"/projects/[id]">,
@@ -15,7 +17,7 @@ export default async function ProjectDetailPage(
   const { id } = await props.params;
   const supabase = await createClient();
 
-  const [{ data: project }, { data: tasks }, { data: monthRows }] =
+  const [{ data: project }, { data: tasks }, { data: monthRows }, { data: payRows }] =
     await Promise.all([
       supabase.from("projects").select("*").eq("id", id).single(),
       supabase
@@ -24,6 +26,7 @@ export default async function ProjectDetailPage(
         .eq("project_id", id)
         .order("created_at"),
       supabase.from("sales_call_months").select("*").eq("project_id", id),
+      supabase.from("maintenance_payments").select("*").eq("project_id", id),
     ]);
 
   if (!project) {
@@ -77,6 +80,17 @@ export default async function ProjectDetailPage(
             <SalesMonthLog project={typed} months={months} />
           </div>
         )}
+        {clientType === "website" &&
+          billingOf(typed) === "yearly" &&
+          !typed.no_maintenance &&
+          (typed.maintenance_fee ?? 0) > 0 && (
+            <div className="mt-10">
+              <YearlyMaintenancePanel
+                project={typed}
+                payments={(payRows ?? []) as MaintenancePayment[]}
+              />
+            </div>
+          )}
       </div>
       <div className="w-full lg:w-80">
         <TaskList projectId={id} tasks={(tasks ?? []) as ProjectTask[]} />

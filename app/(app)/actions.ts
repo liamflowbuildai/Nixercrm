@@ -86,15 +86,30 @@ function monthlyToYearly(monthly: number | null): number | null {
 
 const toMonthly = (yearly: number) => Math.round((yearly / 12) * 100) / 100;
 
-// If the monthly figure wasn't edited, keep the exact yearly value already
-// stored (e.g. €500/yr shows as €41.67/mo and must not become €500.04).
+// The form takes the amount per billing period (€/month or €/year). If a
+// monthly figure wasn't edited, keep the exact yearly value already stored
+// (e.g. €500/yr shows as €41.67/mo and must not become €500.04).
 function maintenanceYearly(formData: FormData): number | null {
-  const monthly = optionalNumber(formData, "maintenance_monthly");
+  const amount = optionalNumber(formData, "maintenance_amount");
+  if (formData.get("maintenance_billing") !== "monthly") return amount;
   const original = optionalNumber(formData, "maintenance_fee_original");
-  if (monthly != null && original != null && toMonthly(original) === monthly) {
+  if (amount != null && original != null && toMonthly(original) === amount) {
     return original;
   }
-  return monthlyToYearly(monthly);
+  return monthlyToYearly(amount);
+}
+
+function billingFields(formData: FormData) {
+  const billing = formData.get("maintenance_billing") === "monthly" ? "monthly" : "yearly";
+  return {
+    maintenance_billing: billing,
+    monthly_billing_from:
+      billing === "monthly"
+        ? optionalString(formData, "monthly_billing_from") ??
+          optionalString(formData, "maintenance_setup_at") ??
+          toDateInput(new Date())
+        : null,
+  };
 }
 
 function websiteFields(formData: FormData) {
@@ -105,6 +120,7 @@ function websiteFields(formData: FormData) {
     deposit_paid_at: optionalString(formData, "deposit_paid_at"),
     invoice_paid_at: optionalString(formData, "invoice_paid_at"),
     maintenance_fee: maintenanceYearly(formData),
+    ...billingFields(formData),
     maintenance_setup_at: optionalString(formData, "maintenance_setup_at"),
     no_maintenance: checkbox(formData, "no_maintenance"),
     launch_date: optionalString(formData, "launch_date"),
@@ -435,4 +451,37 @@ export async function saveAdSpend(formData: FormData) {
   );
   if (error) throw new Error(error.message);
   revalidatePath("/");
+}
+
+// ---------- Yearly maintenance payments ----------
+
+export async function addMaintenancePayment(projectId: string, formData: FormData) {
+  const paidAt = optionalString(formData, "paid_at");
+  const amount = optionalNumber(formData, "amount");
+  if (!paidAt || amount == null) throw new Error("Payment date and amount are required.");
+  let coversUntil = optionalString(formData, "covers_until");
+  if (!coversUntil) {
+    const d = new Date(`${paidAt}T00:00:00`);
+    d.setFullYear(d.getFullYear() + 1);
+    coversUntil = toDateInput(d);
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("maintenance_payments").insert({
+    project_id: projectId,
+    paid_at: paidAt,
+    amount,
+    covers_until: coversUntil,
+    note: optionalString(formData, "note"),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function deleteMaintenancePayment(paymentId: string, projectId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("maintenance_payments").delete().eq("id", paymentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+  revalidatePath(`/projects/${projectId}`);
 }

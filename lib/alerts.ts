@@ -1,11 +1,12 @@
 import { stageIndex } from "./stages";
 import { toDateInput } from "./sales";
-import type { Project } from "./types";
+import { billingOf, hasActiveMaintenance, yearlyStatus } from "./maintenance";
+import type { MaintenancePayment, Project } from "./types";
 
 export type Alert = {
   projectId: string;
   projectName: string;
-  type: "renewal" | "follow_up" | "day21_review" | "pilot_end";
+  type: "renewal" | "follow_up" | "day21_review" | "pilot_end" | "maintenance_due";
   date: string;
   daysUntil: number;
 };
@@ -27,15 +28,19 @@ function addDays(dateStr: string, days: number): string {
   return toDateInput(d);
 }
 
-export function computeAlerts(projects: Project[], withinDays = 7): Alert[] {
+export function computeAlerts(
+  projects: Project[],
+  withinDays = 7,
+  payments: MaintenancePayment[] = [],
+): Alert[] {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
   const alerts: Alert[] = [];
 
-  function push(project: Project, type: Alert["type"], dateValue: string) {
+  function push(project: Project, type: Alert["type"], dateValue: string, within = withinDays) {
     const remaining = daysUntil(dateValue, now);
-    if (remaining <= withinDays) {
+    if (remaining <= within) {
       alerts.push({
         projectId: project.id,
         projectName: project.name,
@@ -50,6 +55,13 @@ export function computeAlerts(projects: Project[], withinDays = 7): Alert[] {
     for (const [type, field] of DATE_FIELDS) {
       const dateValue = project[field] as string | null;
       if (dateValue) push(project, type, dateValue);
+    }
+
+    // Yearly maintenance renewals: flag 30 days ahead so there's time to
+    // invoice (or move them onto monthly billing).
+    if (hasActiveMaintenance(project) && billingOf(project) === "yearly") {
+      const due = yearlyStatus(project, payments, now).dueDate;
+      if (due) push(project, "maintenance_due", toDateInput(due), 30);
     }
 
     // Sales System pilots: the day-21 review and the end of the 90 days.

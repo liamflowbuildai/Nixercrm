@@ -1,4 +1,5 @@
 import { isLostStage, stagesFor, type ClientType } from "@/lib/stages";
+import { MaintenanceFields } from "./MaintenanceFields";
 import { DEFAULT_ONBOARDING_FEE, DEFAULT_PRICE_PER_CALL } from "@/lib/sales";
 import type { Project } from "@/lib/types";
 
@@ -150,16 +151,11 @@ export function ProjectForm({
               type="date"
               defaultValue={d.invoice_paid_at}
             />
-            <Field
-              label="Maintenance (€/month)"
-              name="maintenance_monthly"
-              type="number"
-              step="0.01"
-              defaultValue={
-                d.maintenance_fee != null
-                  ? Math.round((d.maintenance_fee / 12) * 100) / 100
-                  : null
-              }
+            <MaintenanceFields
+              yearlyFee={d.maintenance_fee ?? null}
+              billing={isNew ? "monthly" : d.maintenance_billing === "monthly" ? "monthly" : "yearly"}
+              monthlyFrom={d.monthly_billing_from ?? null}
+              isNew={isNew}
             />
             <Field
               label="Maintenance set up on"

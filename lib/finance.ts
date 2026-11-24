@@ -1,6 +1,7 @@
 import { stageIndex } from "./stages";
 import { getPilotStatus, isLiveSalesClient, monthAmount } from "./sales";
-import type { Project, SalesMonth } from "./types";
+import { billingOf, hasActiveMaintenance, monthlyMaintenanceIn, monthlyStart, yearlyStatus } from "./maintenance";
+import type { MaintenancePayment, Project, SalesMonth } from "./types";
 
 const PROJECT_COMPLETE_INDEX = stageIndex("project_complete");
 
@@ -21,7 +22,8 @@ export type FinancialSummary = {
   outstanding: FinancialBreakdown;
   revenueThisMonth: FinancialBreakdown;
   revenueThisYear: FinancialBreakdown;
-  monthlyMaintenance: FinancialBreakdown; // maintenance MRR
+  monthlyMaintenance: FinancialBreakdown; // MRR from monthly-billed clients
+  annualMaintenance: FinancialBreakdown; // €/yr from yearly-billed clients
 };
 
 function toBreakdown(
@@ -59,10 +61,13 @@ function parseDate(dateStr: string): Date {
 // (or both) landed within the period.
 // Sales System: onboarding fee in the month it was paid, plus calls held (and
 // any retainer) in the month they happened — counted when held, not when paid.
+// Website maintenance: yearly payments count in the month they were paid;
+// monthly clients count their monthly fee each month from billing start.
 function collectRevenueLines(
   projects: Project[],
   months: SalesMonth[],
   matchesDate: (date: Date) => boolean,
+  payments: MaintenancePayment[] = [],
 ) {
   const lines: Array<{ project: Project; amount: number }> = [];
 
@@ -79,6 +84,23 @@ function collectRevenueLines(
         if (matchesDate(parseDate(project.invoice_paid_at))) {
           amount +=
             (project.budget_amount ?? 0) - (project.deposit_amount ?? 0);
+        }
+      }
+      for (const pay of payments) {
+        if (pay.project_id === project.id && matchesDate(parseDate(pay.paid_at))) {
+          amount += pay.amount;
+        }
+      }
+      const start = billingOf(project) === "monthly" ? monthlyStart(project) : null;
+      if (start) {
+        const now = new Date();
+        const d = parseDate(start);
+        d.setDate(1);
+        while (d <= now) {
+          if (matchesDate(d)) {
+            amount += monthlyMaintenanceIn(project, d.getFullYear(), d.getMonth());
+          }
+          d.setMonth(d.getMonth() + 1);
         }
       }
     } else {
@@ -109,12 +131,14 @@ export function revenueForMonth(
   months: SalesMonth[],
   year: number,
   month: number,
+  payments: MaintenancePayment[] = [],
 ): { web: number; sales: number } {
   const b = toBreakdown(
     collectRevenueLines(
       projects,
       months,
       (d) => d.getFullYear() === year && d.getMonth() === month,
+      payments,
     ),
   );
   return { web: b.websiteTotal, sales: b.salesTotal };
@@ -123,6 +147,7 @@ export function revenueForMonth(
 export function computeFinancialSummary(
   projects: Project[],
   months: SalesMonth[] = [],
+  payments: MaintenancePayment[] = [],
 ): FinancialSummary {
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -171,6 +196,15 @@ export function computeFinancialSummary(
         project: p,
         amount: getPilotStatus(p, months).unpaidAmount,
       })),
+    // Yearly maintenance that's come due with no payment recorded.
+    ...projects
+      .filter(
+        (p) =>
+          hasActiveMaintenance(p) &&
+          billingOf(p) === "yearly" &&
+          yearlyStatus(p, payments, now).overdue,
+      )
+      .map((p) => ({ project: p, amount: p.maintenance_fee })),
   ]);
 
   const revenueThisYear = toBreakdown(
@@ -178,6 +212,7 @@ export function computeFinancialSummary(
       projects,
       months,
       (d) => d.getFullYear() === currentYear,
+      payments,
     ),
   );
 
@@ -186,14 +221,21 @@ export function computeFinancialSummary(
       projects,
       months,
       (d) => d.getFullYear() === currentYear && d.getMonth() === currentMonth,
+      payments,
     ),
   );
 
-  // maintenance_fee is stored as the yearly amount; shown as monthly (MRR).
+  // maintenance_fee is stored as the yearly amount. Only clients actually
+  // billed monthly count as recurring monthly revenue (MRR).
   const monthlyMaintenance = toBreakdown(
     projects
-      .filter((p) => isWebsite(p) && p.maintenance_setup_at != null)
+      .filter((p) => hasActiveMaintenance(p) && billingOf(p) === "monthly")
       .map((p) => ({ project: p, amount: (p.maintenance_fee ?? 0) / 12 })),
+  );
+  const annualMaintenance = toBreakdown(
+    projects
+      .filter((p) => hasActiveMaintenance(p) && billingOf(p) === "yearly")
+      .map((p) => ({ project: p, amount: p.maintenance_fee })),
   );
 
   return {
@@ -202,5 +244,6 @@ export function computeFinancialSummary(
     revenueThisMonth,
     revenueThisYear,
     monthlyMaintenance,
+    annualMaintenance,
   };
 }

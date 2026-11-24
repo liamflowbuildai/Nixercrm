@@ -30,6 +30,9 @@ export type Project = {
   // Lost deals: the stage they were at when lost, and when
   lost_from_stage: ProjectStage | null;
   lost_at: string | null;
+  // Website maintenance billing: yearly (older clients) or monthly
+  maintenance_billing: "monthly" | "yearly" | null;
+  monthly_billing_from: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -63,4 +66,15 @@ export type AdSpend = {
   daily_budget: number | null;
   actual_total: number | null;
   updated_at: string;
+};
+
+// A maintenance payment from a yearly-billed website client.
+export type MaintenancePayment = {
+  id: string;
+  project_id: string;
+  paid_at: string;
+  amount: number;
+  covers_until: string | null;
+  note: string | null;
+  created_at: string;
 };

@@ -30,7 +30,7 @@ import { formatCurrency } from "@/lib/format";
 import { expenseTotal, expensesForMonth, hasExpenseData } from "@/lib/expenses";
 import { isInPilot } from "@/lib/sales";
 import { SALES_STAGES, WEBSITE_STAGES, stageLabel } from "@/lib/stages";
-import type { AdSpend, Project, SalesMonth } from "@/lib/types";
+import type { AdSpend, MaintenancePayment, Project, SalesMonth } from "@/lib/types";
 import { adSpendForMonth } from "@/lib/adspend";
 import { MonthMoney } from "@/components/dashboard/MonthMoney";
 
@@ -40,19 +40,21 @@ export function DashboardView({
   projects,
   months,
   adSpend = [],
+  payments = [],
   range,
 }: {
   projects: Project[];
   months: SalesMonth[];
   adSpend?: AdSpend[];
+  payments?: MaintenancePayment[];
   range: RangeValue;
 }) {
   const websiteProjects = projects.filter((p) => p.client_type !== "sales_system");
   const salesProjects = projects.filter((p) => p.client_type === "sales_system");
   const rangeLabel = RANGES.find((r) => r.value === range)!.label.toLowerCase();
 
-  const fin = computeFinancialSummary(projects, months);
-  const trend = revenueTrend(projects, months, 6);
+  const fin = computeFinancialSummary(projects, months, payments);
+  const trend = revenueTrend(projects, months, 6, payments);
   const thisMonth = trend[trend.length - 1];
   const lastMonth = trend[trend.length - 2];
   const thisTotal = thisMonth.web + thisMonth.sales;
@@ -69,7 +71,7 @@ export function DashboardView({
   const wRates = websiteRates(wFunnel);
   const sales = salesHeadline(salesProjects, months);
   const stale = staleDeals(projects);
-  const alerts = computeAlerts(projects);
+  const alerts = computeAlerts(projects, 7, payments);
   const now = new Date();
   const monthName = now.toLocaleString("en-IE", { month: "long" });
   const expenseItems = expensesForMonth(now.getFullYear(), now.getMonth());
@@ -139,9 +141,9 @@ export function DashboardView({
               sub={`Sales ${formatCurrency(fin.revenueThisYear.salesTotal)} · Web ${formatCurrency(fin.revenueThisYear.websiteTotal)}`}
             />
             <Figure
-              label="Maintenance MRR"
+              label="Maintenance"
               value={`${formatCurrency(fin.monthlyMaintenance.total)}/mo`}
-              sub={`${fin.monthlyMaintenance.lines.length} clients · ${formatCurrency(fin.monthlyMaintenance.total * 12)}/yr`}
+              sub={`MRR from ${fin.monthlyMaintenance.lines.length} monthly client${fin.monthlyMaintenance.lines.length === 1 ? "" : "s"} · + ${formatCurrency(fin.annualMaintenance.total)}/yr from ${fin.annualMaintenance.lines.length} yearly`}
             />
           </FigureRow>
         </div>

@@ -7,7 +7,7 @@ import {
   type ProjectStage,
   type StageOption,
 } from "./stages";
-import type { Project, SalesMonth } from "./types";
+import type { MaintenancePayment, Project, SalesMonth } from "./types";
 
 // ---------- date range filter (scopes funnels, rates and bottlenecks) ----------
 
@@ -257,11 +257,12 @@ export function revenueTrend(
   projects: Project[],
   months: SalesMonth[],
   n = 6,
+  payments: MaintenancePayment[] = [],
 ): MonthPoint[] {
   return lastMonths(n).map((m) => ({
     key: m.key,
     label: m.label,
-    ...revenueForMonth(projects, months, m.year, m.month),
+    ...revenueForMonth(projects, months, m.year, m.month, payments),
   }));
 }
 

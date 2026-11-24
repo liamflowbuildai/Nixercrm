@@ -6,6 +6,7 @@ const TYPE_LABEL: Record<Alert["type"], string> = {
   follow_up: "Follow-up",
   day21_review: "Day-21 review",
   pilot_end: "Pilot ends",
+  maintenance_due: "Maintenance renewal",
 };
 
 export function NeedsAttention({ alerts }: { alerts: Alert[] }) {
