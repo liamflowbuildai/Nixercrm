@@ -69,6 +69,9 @@ export function DashboardView({
   const showProfit = hasExpenseData(now.getFullYear(), now.getMonth());
   const profit = thisTotal - expenses;
   const margin = thisTotal > 0 ? Math.round((profit / thisTotal) * 100) : null;
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const showPrevProfit = hasExpenseData(prev.getFullYear(), prev.getMonth());
+  const prevProfit = lastTotal - expenseTotal(prev.getFullYear(), prev.getMonth());
 
   return (
     <div className="flex flex-col gap-14">
@@ -91,7 +94,7 @@ export function DashboardView({
             </p>
 
             <div className="mt-8 border-t border-border pt-4">
-              <p className="text-sm text-muted">Profit in {monthName}</p>
+              <p className="text-sm text-muted">Profit in {monthName} <span className="text-dim">(excl. ad spend)</span></p>
               {showProfit ? (
                 <>
                   <p
@@ -106,6 +109,12 @@ export function DashboardView({
                     Revenue {formatCurrency(thisTotal)} − expenses {formatCurrency(expenses)}
                     {margin != null && ` · ${margin}% margin`}
                   </p>
+                  {showPrevProfit && (
+                    <p className="mt-1 text-xs text-dim">
+                      {lastMonth.label}: {prevProfit < 0 ? "−" : ""}
+                      {formatCurrency(Math.abs(prevProfit))} profit
+                    </p>
+                  )}
                   <details className="mt-3 text-sm">
                     <summary className="cursor-pointer text-xs text-dim hover:text-muted">
                       {expenseItems.length} expenses this month
