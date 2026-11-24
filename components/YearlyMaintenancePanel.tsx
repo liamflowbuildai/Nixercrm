@@ -26,12 +26,10 @@ export function YearlyMaintenancePanel({
   let tone = "text-muted";
   if (s.dueDate && s.daysUntilDue != null) {
     if (s.overdue) {
-      status = s.paidUntil
-        ? `Renewal overdue: was due ${fmt(s.dueDate)}`
-        : `No payment recorded: due since ${fmt(s.dueDate)}`;
+      status = `Renewal overdue: was due ${fmt(s.dueDate)}`;
       tone = "text-danger";
     } else {
-      status = `Paid until ${fmt(s.dueDate)} · renews in ${s.daysUntilDue} days`;
+      status = `${s.paidUntil ? "Paid" : "Covered"} until ${fmt(s.dueDate)} · renews in ${s.daysUntilDue} days`;
       tone = s.daysUntilDue <= 30 ? "text-accent-lt" : "text-ok";
     }
   }

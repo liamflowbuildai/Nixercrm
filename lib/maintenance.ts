@@ -52,8 +52,9 @@ export type YearlyStatus = {
   lastPayment: MaintenancePayment | null;
 };
 
-// Yearly clients: paid up to the latest payment's "covers until" date; if no
-// payment is recorded, the year is due from when maintenance was set up.
+// Yearly clients: paid up to the latest payment's "covers until" date. With no
+// payment recorded, setting up maintenance means the first year is in place,
+// so the renewal is due one year after the set-up date.
 export function yearlyStatus(
   p: Project,
   payments: MaintenancePayment[],
@@ -67,7 +68,8 @@ export function yearlyStatus(
     .map((x) => (x.covers_until ? parseDate(x.covers_until) : addYears(x.paid_at, 1)))
     .sort((a, b) => b.getTime() - a.getTime());
   const paidUntil = covers[0] ?? null;
-  const dueDate = paidUntil ?? (p.maintenance_setup_at ? parseDate(p.maintenance_setup_at) : null);
+  const dueDate =
+    paidUntil ?? (p.maintenance_setup_at ? addYears(p.maintenance_setup_at, 1) : null);
   const t = new Date(today);
   t.setHours(0, 0, 0, 0);
   const daysUntilDue = dueDate
