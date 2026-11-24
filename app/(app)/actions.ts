@@ -414,3 +414,25 @@ export async function deleteSalesMonth(monthId: string, projectId: string) {
   if (error) throw new Error(error.message);
   revalidateSales(projectId);
 }
+
+// ---------- Meta ad spend (per calendar month) ----------
+
+export async function saveAdSpend(formData: FormData) {
+  const month = parseMonthKey(optionalString(formData, "month"));
+  if (!month) throw new Error("Pick a month.");
+  const daily = optionalNumber(formData, "daily_budget");
+  const actual = optionalNumber(formData, "actual_total");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("ad_spend").upsert(
+    {
+      month,
+      daily_budget: daily == null ? null : Math.max(0, daily),
+      actual_total: actual == null ? null : Math.max(0, actual),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "month" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}

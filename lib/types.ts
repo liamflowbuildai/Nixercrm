@@ -55,3 +55,12 @@ export type SalesMonth = {
   paid_at: string | null;
   created_at: string;
 };
+
+// Meta ad spend per calendar month (one row per month).
+export type AdSpend = {
+  id: string;
+  month: string; // YYYY-MM-01
+  daily_budget: number | null;
+  actual_total: number | null;
+  updated_at: string;
+};

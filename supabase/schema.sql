@@ -118,3 +118,14 @@ create trigger projects_set_updated_at
 
 -- Migration: databases created before Sales System clients existed should run
 -- supabase/migrations/2026-11-17-sales-system.sql instead of this script.
+
+create table ad_spend (
+  id uuid primary key default gen_random_uuid(),
+  month date not null unique,
+  daily_budget numeric,
+  actual_total numeric,
+  updated_at timestamptz not null default now()
+);
+alter table ad_spend enable row level security;
+create policy "authenticated users can do anything with ad_spend"
+  on ad_spend for all to authenticated using (true) with check (true);

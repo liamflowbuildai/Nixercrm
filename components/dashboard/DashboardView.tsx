@@ -30,17 +30,21 @@ import { formatCurrency } from "@/lib/format";
 import { expenseTotal, expensesForMonth, hasExpenseData } from "@/lib/expenses";
 import { isInPilot } from "@/lib/sales";
 import { SALES_STAGES, WEBSITE_STAGES, stageLabel } from "@/lib/stages";
-import type { Project, SalesMonth } from "@/lib/types";
+import type { AdSpend, Project, SalesMonth } from "@/lib/types";
+import { adSpendForMonth } from "@/lib/adspend";
+import { MonthMoney } from "@/components/dashboard/MonthMoney";
 
 const pct = (n: number | null) => (n == null ? "—" : `${Math.round(n * 100)}%`);
 
 export function DashboardView({
   projects,
   months,
+  adSpend = [],
   range,
 }: {
   projects: Project[];
   months: SalesMonth[];
+  adSpend?: AdSpend[];
   range: RangeValue;
 }) {
   const websiteProjects = projects.filter((p) => p.client_type !== "sales_system");
@@ -71,11 +75,13 @@ export function DashboardView({
   const expenseItems = expensesForMonth(now.getFullYear(), now.getMonth());
   const expenses = expenseTotal(now.getFullYear(), now.getMonth());
   const showProfit = hasExpenseData(now.getFullYear(), now.getMonth());
-  const profit = thisTotal - expenses;
-  const margin = thisTotal > 0 ? Math.round((profit / thisTotal) * 100) : null;
+  const ad = adSpendForMonth(adSpend, now.getFullYear(), now.getMonth(), now);
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const showPrevProfit = hasExpenseData(prev.getFullYear(), prev.getMonth());
-  const prevProfit = lastTotal - expenseTotal(prev.getFullYear(), prev.getMonth());
+  const prevProfit =
+    lastTotal -
+    expenseTotal(prev.getFullYear(), prev.getMonth()) -
+    adSpendForMonth(adSpend, prev.getFullYear(), prev.getMonth(), now).total;
 
   return (
     <div className="flex flex-col gap-14">
@@ -97,56 +103,18 @@ export function DashboardView({
               {formatCurrency(thisMonth.web)}
             </p>
 
-            <div className="mt-8 border-t border-border pt-4">
-              <p className="text-sm text-muted">Profit in {monthName} <span className="text-dim">(excl. ad spend)</span></p>
-              {showProfit ? (
-                <>
-                  <p
-                    className={`mt-2 text-[40px] font-semibold leading-none tracking-[-0.045em] ${
-                      profit >= 0 ? "text-fg" : "text-danger"
-                    }`}
-                  >
-                    {profit < 0 && "−"}
-                    {formatCurrency(Math.abs(profit))}
-                  </p>
-                  <p className="mt-3 text-sm text-muted">
-                    Revenue {formatCurrency(thisTotal)} − expenses {formatCurrency(expenses)}
-                    {margin != null && ` · ${margin}% margin`}
-                  </p>
-                  {showPrevProfit && (
-                    <p className="mt-1 text-xs text-dim">
-                      {lastMonth.label}: {prevProfit < 0 ? "−" : ""}
-                      {formatCurrency(Math.abs(prevProfit))} profit
-                    </p>
-                  )}
-                  <details className="mt-3 text-sm">
-                    <summary className="cursor-pointer text-xs text-dim hover:text-muted">
-                      {expenseItems.length} expenses this month
-                    </summary>
-                    <ul className="mt-2 flex flex-col">
-                      {expenseItems
-                        .slice()
-                        .sort((a, b) => b.amount - a.amount)
-                        .map((e) => (
-                          <li
-                            key={e.name}
-                            className="flex justify-between gap-4 border-b border-border py-1.5"
-                          >
-                            <span className="text-muted">
-                              {e.name}
-                              {!e.recurring && <span className="ml-1.5 text-xs text-dim">one-off</span>}
-                            </span>
-                            <span className="tnum text-fg">{formatCurrency(e.amount)}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </details>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-dim">
-                  Expenses not added yet. Read them out to Claude and this fills in.
-                </p>
-              )}
+            <div className="mt-8">
+              <MonthMoney
+                monthName={monthName}
+                monthKey={`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
+                revenue={thisTotal}
+                expenseItems={expenseItems}
+                expenses={expenses}
+                expensesKnown={showProfit}
+                ad={ad}
+                prevLabel={lastMonth.label}
+                prevProfit={showPrevProfit ? prevProfit : null}
+              />
             </div>
           </div>
           <Panel title="Revenue, last 6 months" sub="Cash in for websites; held calls + onboarding for sales clients">
